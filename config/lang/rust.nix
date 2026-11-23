@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }: {
@@ -7,6 +8,16 @@
   plugins = {
     rustaceanvim = {
       enable = true;
+      # rustaceanvim's busted/rust-analyzer integration tests flake on macOS
+      # under parallel build load (10s workspace init timeout in lsp_spec.lua).
+      # Clearing luaAttr also drops the unused luajitPackages.rustaceanvim input
+      # so its duplicate bustedCheckPhase does not run either.
+      package = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
+        pkgs.vimPlugins.rustaceanvim.overrideAttrs {
+          doCheck = false;
+          luaAttr = null;
+        }
+      );
       settings.server = {
         on_attach.__raw = ''
           function(_, bufnr)
